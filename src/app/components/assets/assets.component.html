@@ -1,0 +1,13 @@
+<p>assets works!</p>
+
+@if (l1Data$ | async; as l1Data) {
+<ul>
+  <li>Ask: {{ l1Data.ask | json }}</li>
+  <li>Bid: {{ l1Data.bid | json }}</li>
+  <li>Last: {{ l1Data.last | json }}</li>
+</ul>
+}
+
+<div class="ChartContainer">
+  <div #priceChart style="width: 100%; height: 400px;"></div>
+</div>
