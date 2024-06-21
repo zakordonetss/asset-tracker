@@ -1,24 +1,46 @@
-<p>assets works!</p>
+<section class="SubscriptionSection">
+  <mat-form-field class="FormField">
+    <mat-label>Select Symbol</mat-label>
+    <input matInput [formControl]="symbolControl" [matAutocomplete]="auto">
 
-@if (l1Data$ | async; as l1Data) {
-<ul>
-  <li>Ask: {{ l1Data.ask | json }}</li>
-  <li>Bid: {{ l1Data.bid | json }}</li>
-  <li>Last: {{ l1Data.last | json }}</li>
-</ul>
-}
+    <mat-autocomplete #auto="matAutocomplete">
+      @for (symbol of filteredSymbols$ | async; track $index) {
+      <mat-option [value]="symbol">
+        {{ symbol }}
+      </mat-option>
+      }
+    </mat-autocomplete>
+  </mat-form-field>
 
-<div class="ChartContainer">
-  <div #priceChart style="width: 100%; height: 400px;"></div>
+  <button mat-stroked-button color="primary" class="Button" (click)="subscribeToWebSocket()"
+    [disabled]="!symbolControl.value">
+    Subscribe
+  </button>
+</section>
+
+<div>
+  <h3 class="Title">Market data:</h3>
+
+  <section class="SubscriptonInfoSection">
+    <div class="OrderValue">
+      <div>Symbol:</div>
+      <div>{{ marketOrder ? symbolControl.value : 'N/A' }}</div>
+    </div>
+    <div class="OrderValue">
+      <div>Price:</div>
+      <div>{{ marketOrder ? '$' + marketOrder.price : 'N/A' }}</div>
+    </div>
+    <div class="OrderValue">
+      <div>Date:</div>
+      <div>{{ marketOrder ? (marketOrder.timestamp | date:'MMM d, h:mm a') : 'N/A' }}</div>
+    </div>
+  </section>
 </div>
 
 <div>
-  <mat-form-field>
-    <input matInput placeholder="Select Symbol" [formControl]="symbolControl" [matAutocomplete]="auto">
-    <mat-autocomplete #auto="matAutocomplete">
-      <mat-option *ngFor="let symbol of filteredSymbols$ | async" [value]="symbol">
-        {{ symbol }}
-      </mat-option>
-    </mat-autocomplete>
-  </mat-form-field>
+  <h3 class="Title">Charting data:</h3>
+
+  <section class="ChartSection">
+    <div #priceChart style="width: 100%; height: 400px;"></div>
+  </section>
 </div>

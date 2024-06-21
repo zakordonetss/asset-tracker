@@ -1,0 +1,53 @@
+@mixin border
+  border: 1px solid gray
+  border-radius: 5px
+
+$spacing: 5px
+$gap: $spacing * 6
+
+:host
+  display: flex
+  flex-direction: column
+  gap: $gap
+
+  padding: $gap
+
+  @include border
+
+.SubscriptionSection
+  display: flex
+  justify-content: center
+  gap: calc($gap / 2)
+  align-items: baseline
+
+.SubscriptonInfoSection
+  display: flex
+  justify-content: space-around
+
+  @include border
+
+  .OrderValue
+    display: flex
+    flex-direction: column
+    align-items: center
+
+    padding: $spacing * 2
+    width: 150px
+
+.ChartSection
+  padding: $spacing
+
+  @include border
+
+.Title
+  font-size: 20px
+  margin: 0
+
+.FormField
+  min-width: 300px
+  flex-grow: 1
+  flex-shrink: 1
+  flex-basis: 0
+
+.Button
+  border-radius: $spacing
