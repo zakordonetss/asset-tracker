@@ -24,15 +24,15 @@
   <section class="SubscriptonInfoSection">
     <div class="OrderValue">
       <div>Symbol:</div>
-      <div>{{ marketOrder ? symbolControl.value : 'N/A' }}</div>
+      <div>{{ marketOrder() ? symbolControl.value : 'N/A' }}</div>
     </div>
     <div class="OrderValue">
       <div>Price:</div>
-      <div>{{ marketOrder ? '$' + marketOrder.price : 'N/A' }}</div>
+      <div>{{ marketOrder() ? '$' + marketOrder()?.price : 'N/A' }}</div>
     </div>
     <div class="OrderValue">
       <div>Date:</div>
-      <div>{{ marketOrder ? (marketOrder.timestamp | date:'MMM d, h:mm a') : 'N/A' }}</div>
+      <div>{{ marketOrder() ? (marketOrder()?.timestamp | date:'MMM d, h:mm a') : 'N/A' }}</div>
     </div>
   </section>
 </div>

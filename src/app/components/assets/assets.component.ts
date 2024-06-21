@@ -4,6 +4,7 @@ import {
   OnDestroy,
   ViewChild,
   ElementRef,
+  signal,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -54,17 +55,21 @@ HighchartsAccessibility(Highcharts);
   standalone: true,
 })
 export class AssetsComponent implements OnInit, OnDestroy {
-  @ViewChild('priceChart', { static: true }) private _priceChart: ElementRef;
+  @ViewChild('priceChart', { static: true })
+  private readonly _priceChart: ElementRef;
 
-  symbolControl = new FormControl('USD/PLN');
-  filteredSymbols$: Observable<string[]>;
-  marketOrder: IMarketOrder;
+  public readonly symbolControl = new FormControl<string>('');
+  public filteredSymbols$: Observable<string[]>;
+  public marketOrder = signal<IMarketOrder | undefined>(undefined);
 
   private _websocketSubscription: Subscription;
   private _priceHistorySubscription: Subscription;
   private _chart: Highcharts.Chart;
   private _instrumentId: string;
   private readonly _defaultKindInstrument = 'forex';
+  private readonly _defaultSymbol = 'USD/PLN';
+
+  private cachedSymbols: string[] = [];
 
   constructor(
     private readonly _webSocketService: WebSocketService,
@@ -72,17 +77,24 @@ export class AssetsComponent implements OnInit, OnDestroy {
     private readonly _instrumentsService: InstrumentsApiService
   ) {}
 
-  ngOnInit(): void {
-    this.setupSymbolAutocomplete();
-    this.loadInitialPriceHistory();
-    this.subscribeToSymbolChanges();
+  public ngOnInit(): void {
+    this._setupSymbolAutocomplete();
+    this._loadInitialPriceHistory();
+    this._subscribeToSymbolChanges();
   }
 
-  ngOnDestroy(): void {
-    this.unsubscribeAll();
+  public ngOnDestroy(): void {
+    this._unsubscribeAll();
   }
 
-  private unsubscribeAll(): void {
+  public subscribeToWebSocket(): void {
+    const symbol = this.symbolControl.value;
+    if (symbol) {
+      this._fetchInstrumentIdAndSubscribeToWebSocket(symbol);
+    }
+  }
+
+  private _unsubscribeAll(): void {
     if (this._websocketSubscription) {
       this._websocketSubscription.unsubscribe();
     }
@@ -94,16 +106,16 @@ export class AssetsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private setupSymbolAutocomplete(): void {
+  private _setupSymbolAutocomplete(): void {
     this.filteredSymbols$ = this.symbolControl.valueChanges.pipe(
       startWith(''),
       debounceTime(300),
       distinctUntilChanged(),
-      switchMap((value) => this.filterSymbols(value ?? ''))
+      switchMap((value) => this._filterSymbols(value ?? ''))
     );
   }
 
-  private filterSymbols(value: string): Observable<string[]> {
+  private _filterSymbols(value: string): Observable<string[]> {
     return this._instrumentsService
       .getSymbols(EProvider.Oanda, this._defaultKindInstrument)
       .pipe(
@@ -115,19 +127,19 @@ export class AssetsComponent implements OnInit, OnDestroy {
       );
   }
 
-  private subscribeToSymbolChanges(): void {
+  private _subscribeToSymbolChanges(): void {
     this.symbolControl.valueChanges
       .pipe(
         debounceTime(300),
         distinctUntilChanged(),
         switchMap((symbol) =>
-          this.fetchInstrumentIdAndLoadPriceHistory(symbol ?? '')
+          this._fetchInstrumentIdAndLoadPriceHistory(symbol ?? '')
         )
       )
       .subscribe();
   }
 
-  private fetchInstrumentIdAndLoadPriceHistory(
+  private _fetchInstrumentIdAndLoadPriceHistory(
     symbol: string
   ): Observable<void> {
     return this._instrumentsService
@@ -140,7 +152,7 @@ export class AssetsComponent implements OnInit, OnDestroy {
         switchMap((instrumentId) => {
           if (instrumentId) {
             this._instrumentId = instrumentId;
-            return this.loadPriceHistory();
+            return this._loadPriceHistory();
           } else {
             console.error(`Instrument ID not found for symbol: ${symbol}`);
             return [];
@@ -149,11 +161,11 @@ export class AssetsComponent implements OnInit, OnDestroy {
       );
   }
 
-  loadInitialPriceHistory(): void {
-    this.fetchInstrumentIdAndLoadPriceHistory('USD/PLN').subscribe();
+  private _loadInitialPriceHistory(): void {
+    this._fetchInstrumentIdAndLoadPriceHistory(this._defaultSymbol).subscribe();
   }
 
-  loadPriceHistory(): Observable<void> {
+  private _loadPriceHistory(): Observable<void> {
     if (!this._instrumentId) {
       return new Observable();
     }
@@ -170,7 +182,7 @@ export class AssetsComponent implements OnInit, OnDestroy {
     }
     return this._priceApiService.getPriceData(queryParams).pipe(
       map((response) => {
-        this.renderChart(response.data);
+        this._renderChart(response.data);
       }),
       catchError((error) => {
         console.error('Error fetching price history', error);
@@ -179,14 +191,7 @@ export class AssetsComponent implements OnInit, OnDestroy {
     );
   }
 
-  subscribeToWebSocket(): void {
-    const symbol = this.symbolControl.value;
-    if (symbol) {
-      this.fetchInstrumentIdAndSubscribeToWebSocket(symbol);
-    }
-  }
-
-  private fetchInstrumentIdAndSubscribeToWebSocket(symbol: string): void {
+  private _fetchInstrumentIdAndSubscribeToWebSocket(symbol: string): void {
     this._instrumentsService
       .getInstrumentIdBySymbol(
         symbol,
@@ -212,7 +217,7 @@ export class AssetsComponent implements OnInit, OnDestroy {
             this._webSocketService.messages$.subscribe(
               (message: IWebSocketMessage) => {
                 if (message.last) {
-                  this.marketOrder = message.last;
+                  this.marketOrder.set(message.last);
                 }
               }
             );
@@ -223,10 +228,13 @@ export class AssetsComponent implements OnInit, OnDestroy {
       });
   }
 
-  private renderChart(priceData: IPriceData[]): void {
+  private _renderChart(priceData: IPriceData[]): void {
+    const symbol = this.symbolControl.value
+      ? this.symbolControl.value
+      : this._defaultSymbol;
     const chartOptions: Highcharts.Options = {
       title: {
-        text: `Price History for ${this.symbolControl.value}`,
+        text: `Price History for ${symbol}`,
       },
       xAxis: {
         type: 'datetime',

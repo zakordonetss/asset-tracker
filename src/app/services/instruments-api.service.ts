@@ -16,7 +16,31 @@ export class InstrumentsApiService {
     private readonly _authService: AuthService
   ) {}
 
-  getInstruments(
+  getSymbols(provider?: EProvider, kind?: string): Observable<string[]> {
+    return this._getInstruments(provider, kind).pipe(
+      switchMap((response) => {
+        const symbols = response.data.map(
+          (instrument: IInstrument) => instrument.symbol
+        );
+        return of(symbols);
+      })
+    );
+  }
+
+  getInstrumentIdBySymbol(
+    symbol: string,
+    provider?: EProvider,
+    kind?: string
+  ): Observable<string | null> {
+    return this._getInstruments(provider, kind).pipe(
+      switchMap((response) => {
+        const instrument = response.data.find((item) => item.symbol === symbol);
+        return instrument ? of(instrument.id) : of(null);
+      })
+    );
+  }
+
+  private _getInstruments(
     provider?: EProvider,
     kind?: string
   ): Observable<IInstrumentResponse> {
@@ -46,30 +70,6 @@ export class InstrumentsApiService {
               throw error;
             })
           );
-      })
-    );
-  }
-
-  getSymbols(provider?: EProvider, kind?: string): Observable<string[]> {
-    return this.getInstruments(provider, kind).pipe(
-      switchMap((response) => {
-        const symbols = response.data.map(
-          (instrument: IInstrument) => instrument.symbol
-        );
-        return of(symbols);
-      })
-    );
-  }
-
-  getInstrumentIdBySymbol(
-    symbol: string,
-    provider?: EProvider,
-    kind?: string
-  ): Observable<string | null> {
-    return this.getInstruments(provider, kind).pipe(
-      switchMap((response) => {
-        const instrument = response.data.find((item) => item.symbol === symbol);
-        return instrument ? of(instrument.id) : of(null);
       })
     );
   }
