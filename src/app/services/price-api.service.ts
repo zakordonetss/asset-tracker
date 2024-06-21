@@ -17,7 +17,9 @@ export class PriceApiService {
     private readonly _authService: AuthService
   ) {}
 
-  getPriceData(queryParams: IPriceQueryParams): Observable<IPriceResponse> {
+  public getPriceData(
+    queryParams: IPriceQueryParams
+  ): Observable<IPriceResponse> {
     return this._authService.getToken().pipe(
       switchMap((token) => {
         if (!token) {

@@ -10,6 +10,7 @@ import { EProvider, IInstrument, IInstrumentResponse } from '@models';
 })
 export class InstrumentsApiService {
   private readonly _baseUrl = '/api/api/instruments/v1/instruments';
+  private _$cachedInstruments: Observable<IInstrumentResponse>;
 
   constructor(
     private readonly _httpClient: HttpClient,
@@ -17,8 +18,13 @@ export class InstrumentsApiService {
   ) {}
 
   getSymbols(provider?: EProvider, kind?: string): Observable<string[]> {
-    return this._getInstruments(provider, kind).pipe(
+    return (
+      this._$cachedInstruments
+        ? this._$cachedInstruments
+        : this._getInstruments(provider, kind)
+    ).pipe(
       switchMap((response) => {
+        this._$cachedInstruments = of(response);
         const symbols = response.data.map(
           (instrument: IInstrument) => instrument.symbol
         );
@@ -32,7 +38,11 @@ export class InstrumentsApiService {
     provider?: EProvider,
     kind?: string
   ): Observable<string | null> {
-    return this._getInstruments(provider, kind).pipe(
+    return (
+      this._$cachedInstruments
+        ? this._$cachedInstruments
+        : this._getInstruments(provider, kind)
+    ).pipe(
       switchMap((response) => {
         const instrument = response.data.find((item) => item.symbol === symbol);
         return instrument ? of(instrument.id) : of(null);

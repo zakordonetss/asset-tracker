@@ -9,27 +9,29 @@ import { IWebSocketMessage } from '@models';
   providedIn: 'root',
 })
 export class WebSocketService {
-  private socket$: WebSocketSubject<IWebSocketMessage>;
-  private token$: BehaviorSubject<string | null>;
-  private tokenSubscription: Subscription;
+  private _socket$: WebSocketSubject<IWebSocketMessage>;
+  private _token$: BehaviorSubject<string | null>;
+  private _tokenSubscription: Subscription;
   public messages$: Subject<IWebSocketMessage> =
     new Subject<IWebSocketMessage>();
 
-  constructor(private authService: AuthService) {
-    this.token$ = new BehaviorSubject<string | null>(null);
+  constructor(private readonly _authService: AuthService) {
+    this._token$ = new BehaviorSubject<string | null>(null);
 
-    this.tokenSubscription = this.authService.getToken().subscribe((token) => {
-      this.token$.next(token);
-    });
+    this._tokenSubscription = this._authService
+      .getToken()
+      .subscribe((token) => {
+        this._token$.next(token);
+      });
   }
 
   public connect(): void {
-    this.tokenSubscription = this.token$.subscribe((token) => {
+    this._tokenSubscription = this._token$.subscribe((token) => {
       if (token) {
         const url = `${webSocketChanelUrl}?token=${token}`;
-        this.socket$ = webSocket(url);
+        this._socket$ = webSocket(url);
 
-        this.socket$.subscribe({
+        this._socket$.subscribe({
           next: (message) => this.messages$.next(message),
           error: (err) => this.messages$.error(err),
           complete: () => this.messages$.complete(),
@@ -39,19 +41,19 @@ export class WebSocketService {
   }
 
   public sendMessage(message: IWebSocketMessage): void {
-    if (this.socket$) {
-      this.socket$.next(message);
+    if (this._socket$) {
+      this._socket$.next(message);
     } else {
       console.error('WebSocket connection not initialized.');
     }
   }
 
   public closeConnection(): void {
-    if (this.socket$) {
-      this.socket$.complete();
+    if (this._socket$) {
+      this._socket$.complete();
     }
-    if (this.tokenSubscription) {
-      this.tokenSubscription.unsubscribe();
+    if (this._tokenSubscription) {
+      this._tokenSubscription.unsubscribe();
     }
   }
 }
